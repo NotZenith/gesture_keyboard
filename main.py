@@ -4,7 +4,6 @@ import pyautogui
 import time
 import numpy as np
 
-# use the new MediaPipe Tasks API for Python 0.10+
 from mediapipe.tasks.python.vision import (
     HandLandmarker,
     HandLandmarkerOptions,
@@ -20,7 +19,7 @@ from mediapipe.tasks.python.vision.core import vision_task_running_mode
 
 class GestureKeyboard:
     def __init__(self):
-        # download or locate the hand landmarker model bundle
+        # download  hand landmarker model
         self.model_path = os.path.join(os.getcwd(), "hand_landmarker.task")
         if not os.path.exists(self.model_path):
             print("Downloading hand_landmarker.task model...")
@@ -45,46 +44,43 @@ class GestureKeyboard:
         )
         self.hand_landmarker = HandLandmarker.create_from_options(opts)
 
-        # drawing helpers
         self.draw_utils = drawing_utils
         self.hand_connections = hand_landmarker.HandLandmarksConnections.HAND_CONNECTIONS
-
-        # Initialize webcam
+#webcam
         self.cap = cv2.VideoCapture(0)
         self.cap.set(cv2.CAP_PROP_FPS, 30)
 
-        # Gesture detection parameters
-        self.touch_threshold = 0.05  # Normalized distance threshold for touch detection
+# gesture detection
+        self.touch_threshold = 0.05  # touch detection
         self.cooldown = 0.5  # Seconds between repeated gestures
-        self.last_gesture_time = {}  # Track last time each gesture was triggered
+        self.last_gesture_time = {}  # trask last tiem
 
-        # Finger landmark indices (MediaPipe hand landmarks)
         self.finger_tips = [4, 8, 12, 16, 20]  # thumb, index, middle, ring, pinky
 
         self.left_gestures = {
-            (4, 8): 'a',   # index-middle
-            (4, 12): 'b',    # thumb-index
-            (4, 16): 'c',   # thumb-middle
-            (4, 20): 'd',   # thumb-ring
-            (4, 6): 'e',   # thumb-pinky
-            (4, 10): 'f',   # index-ring
-            (4, 14): 'g',   # index-pinky
-            (4, 18): 'h',  # middle-ring
-            (8, 2): 'i',  # middle-pinky
-            (12, 2): 'j',  # ring-pinky
-            (16, 2): 'k',  # thumb-index-middle
-            (17, 2): 'l',  # thumb-index-ring
+            (4, 8): 'a',   
+            (4, 12): 'b',    
+            (4, 16): 'c',   
+            (4, 20): 'd',   
+            (4, 6): 'e',   
+            (4, 10): 'f',   
+            (4, 14): 'g',   
+            (4, 18): 'h', 
+            (8, 2): 'i',  
+            (12, 2): 'j',  
+            (16, 2): 'k',  
+            (17, 2): 'l',  
         }
 
         self.right_gestures = {
-            (4, 8): 'm',   # index-middle
-            (4, 12): 'n',    # thumb-index
-            (4, 20): 'p',   # thumb-ring
-            (4, 6): 'r',   # index-ring
-            (4, 10): 't',   # index-pinky
-            (4, 16): 'z',  # middle-ring
-            (12, 20): ' ',  # middle-pinky
-            (4, 17): 'backspace',  # ring-pinky
+            (4, 8): 'm',   # 
+            (4, 12): 'n',    
+            (4, 20): 'p',  
+            (4, 6): 'r',   #ng
+            (4, 10): 't',   
+            (4, 16): 'z',  #
+            (12, 20): ' ', 
+            (4, 17): 'backspace',  
         }
 
     def calculate_distance(self, p1, p2):
@@ -107,15 +103,13 @@ class GestureKeyboard:
 
     def map_gesture(self, touches, hand_label):
         """Map detected touches to keyboard input based on hand side."""
-        # Check for special single-touch gestures
         if len(touches) == 1:
             touch = touches[0]
-            if hand_label == 'Left' and touch == (4, 20):  # thumb-pinky
+            if hand_label == 'Left' and touch == (4, 20): 
                 return 'space'
-            elif hand_label == 'Right' and touch == (4, 20):  # thumb-pinky
+            elif hand_label == 'Right' and touch == (4, 20):  
                 return 'backspace'
 
-        # Check for letter gestures
         mapping = self.left_gestures if hand_label == 'Left' else self.right_gestures
         for touch in touches:
             if touch in mapping:
@@ -135,7 +129,6 @@ class GestureKeyboard:
                 print("Failed to capture image from webcam.")
                 break
 
-            # prepare frame for the hand landmarker
             img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             mp_img = mp_image.Image(
                 image_format=mp_image.ImageFormat.SRGB, data=img_rgb
@@ -152,7 +145,6 @@ class GestureKeyboard:
                 for hand_idx, landmarks in enumerate(result.hand_landmarks):
                     hand_label = result.handedness[hand_idx][0].category_name
 
-                    # draw landmarks on the original BGR image
                     self.draw_utils.draw_landmarks(
                          img, landmarks, self.hand_connections
                     )
@@ -172,7 +164,6 @@ class GestureKeyboard:
                             self.last_gesture_time[gesture] = current_time
                             print(f"Pressed: {gesture}")
 
-                # inter-hand gesture check
                 if len(result.hand_landmarks) == 2:
                     left_idx = 0 if result.handedness[0][0].category_name == 'Left' else 1
                     right_idx = 1 - left_idx
@@ -204,14 +195,12 @@ class GestureKeyboard:
             cv2.putText(img, "Press 'q' to quit", (10, img.shape[0] - 20),
                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
 
-            # Display the image
             cv2.imshow("Finger Gesture Keyboard", img)
 
-            # Check for quit key
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
-        # Cleanup
+        
         self.cap.release()
         cv2.destroyAllWindows()
         try:
@@ -223,6 +212,7 @@ class GestureKeyboard:
 if __name__ == "__main__":
     keyboard = GestureKeyboard()
     keyboard.run()
+
 
 
 
